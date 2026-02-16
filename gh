@@ -150,8 +150,38 @@ local Library; do
 	function Library:MouseIsOverOpenedFrame() return false end;
 	function Library:MapValue(Value, MinA, MaxA, MinB, MaxB) return (1 - ((Value - MinA) / (MaxA - MinA))) * MinB + ((Value - MinA) / (MaxA - MinA)) * MaxB; end;
 
-	function Library:CreateWindow(...)
-	    return {Tabs = {}, AddTab = function(self, Name) return {AddLeftGroupbox = function() return {} end, AddRightGroupbox = function() return {} end} end}
+	function Library:CreateWindow(Props)
+		local Window = {Tabs = {}}
+		
+		function Window:AddTab(Name)
+			local Tab = {
+				Groupboxes = {};
+				AddLeftGroupbox = function(self, GroupName)
+					local Groupbox = {Container = {GetChildren = function() return {} end}, Resize = function() end}
+					function Groupbox:AddToggle(Idx, Info)
+						Toggles[Idx] = {Value = Info.Default or false, Type = 'Toggle', Callback = Info.Callback or function() end, SetValue = function(self, v) self.Value = v; Library:SafeCallback(self.Callback, v) end}
+						return self
+					end
+					function Groupbox:AddLabel(Text) return {AddColorPicker = function() return self end} end
+					function Groupbox:AddDivider() return self end
+					function Groupbox:AddDropdown(Idx, Info) Options[Idx] = {Value = Info.Default, Type = 'Dropdown', Callback = Info.Callback or function() end, SetValue = function(self, v) self.Value = v; Library:SafeCallback(self.Callback, v) end}; return self end
+					function Groupbox:AddButton(Text, Callback) return self end
+					function Groupbox:AddInput(Idx, Info) Options[Idx] = {Value = Info.Default or '', Type = 'Input', Callback = Info.Callback or function() end}; return self end
+					function Groupbox:AddSlider(Idx, Info) Options[Idx] = {Value = Info.Default or 0, Min = Info.Min, Max = Info.Max, Type = 'Slider', Callback = Info.Callback or function() end}; return self end
+					function Groupbox:AddColorPicker(Idx, Info) Options[Idx] = {Value = Info.Default, Type = 'ColorPicker', Callback = Info.Callback or function() end}; return self end
+					function Groupbox:AddKeyPicker(Idx, Info) Options[Idx] = {Value = Info.Default, Type = 'KeyPicker', Callback = Info.Callback or function() end}; return self end
+					table.insert(self.Groupboxes, Groupbox)
+					return Groupbox
+				end;
+				AddRightGroupbox = function(self, GroupName)
+					return self:AddLeftGroupbox(GroupName)
+				end;
+			}
+			self.Tabs[Name] = Tab
+			return Tab
+		end
+		
+		return Window
 	end;
 
 	function Library:GiveSignal(Signal) table.insert(Library.Signals, Signal) end
